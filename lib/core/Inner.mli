@@ -11,11 +11,16 @@ type t = D.inner =
   | Lam of Ident.t * t
   | Ap of t * t
 
+  | Zero
+  | Suc of t
+  | NatElim of {scrut : t ; zero : t ; suc : t}
+
   | Quote of t
   | Splice of t
 
   | CodePi of t * t
   | CodeUniv of int
+  | CodeNat of int
 
 and global =
   [ `Unstaged of Ident.path * D.value Lazy.t * D.inner Lazy.t

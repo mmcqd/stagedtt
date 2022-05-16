@@ -17,6 +17,8 @@ and tp_clo = D.syntax_tp D.vclo
 
 and t = D.value =
   | Lam of Ident.t * tm_clo
+  | Zero
+  | Suc of D.value
   | Quote of D.value
   | Neu of D.neu
   | Code of code
@@ -27,10 +29,12 @@ and tp = D.value_tp =
   | El of code
   | ElNeu of neu
   | Univ of int
+  | Nat of int
 
 and code = D.code = 
   | CodePi of t * t
   | CodeUniv of int
+  | CodeNat of int
 
 and neu = D.neu = { hd : hd; spine : frm list } 
 
@@ -44,6 +48,7 @@ and global =
 and frm = D.frm =
   | Ap of t
   | Splice
+  | NatElim of {zero : t ; suc : t}
 
 let local lvl =
   Neu { hd = Local lvl; spine = [] }
@@ -80,6 +85,8 @@ end
 let classify_tm =
   function
   | Lam _ -> Prec.arrow
+  | Zero -> Prec.atom
+  | Suc _ -> Prec.juxtaposition
   | Quote _ -> Prec.juxtaposition
   | Neu _ -> Prec.atom
   | Code _ -> Prec.juxtaposition
@@ -91,6 +98,7 @@ let classify_tp =
   | Expr _ -> Prec.delimited
   | El _ -> Prec.passed
   | ElNeu _ -> Prec.passed
+  | Nat _ -> Prec.atom
 
 let pp_clo (pp_tm : t Pp.printer) (pp_a : 'a Pp.printer) env fmt : 'a clo -> unit =
   fun (Clo (a, clo_env)) ->
@@ -124,7 +132,10 @@ let rec pp env =
     Format.fprintf fmt "λ %s → %a"
       x
       (pp_clo pp S.pp env) clo
-
+  | Zero ->
+    Format.fprintf fmt "zero"
+  | Suc n ->
+    Format.fprintf fmt "suc %a" (pp (Pp.right_of Prec.juxtaposition env)) n 
   | Quote v ->
     Format.fprintf fmt "↑[ %a ]"
       (pp env) v
@@ -153,6 +164,10 @@ and pp_frm env fmt =
       (pp env) v
   | Splice ->
     Format.pp_print_string fmt "splice"
+  | NatElim {zero ; suc} ->
+    Format.fprintf fmt "elim [ zero => %a | suc => %a ]" 
+      (pp env) zero
+      (pp env) suc
 
 and pp_code env fmt =
   function
@@ -162,6 +177,9 @@ and pp_code env fmt =
       (pp env) fam
   | CodeUniv stage ->
     Format.fprintf fmt "type %d" stage
+  | CodeNat stage ->
+    Format.fprintf fmt "nat %d" stage
+
 
 let rec pp_tp env =
   Pp.parens classify_tp env @@ fun fmt ->
@@ -182,6 +200,9 @@ let rec pp_tp env =
     pp_code env fmt tm
   | ElNeu neu ->
     pp_neu env fmt neu
+  | Nat stage ->
+    Format.fprintf fmt "nat %d"
+      stage
 
 module Env =
 struct

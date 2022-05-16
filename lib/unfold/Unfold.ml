@@ -42,6 +42,10 @@ open struct
     | D.Lam (x, clo) ->
       bind_var @@ fun arg ->
       D.Lam(x, unfold_clo clo arg)
+    | D.Zero ->
+      D.Zero
+    | D.Suc n ->
+      D.Suc (unfold n)
     | D.Quote tm ->
       D.Quote (unfold tm)
     | D.Code code ->
@@ -59,6 +63,8 @@ open struct
       D.CodePi (unfold base, unfold fam)
     | D.CodeUniv i ->
       D.CodeUniv i
+    | D.CodeNat i ->
+      D.CodeNat i
 
   and unfold_spine spine =
     List.map unfold_frm spine
@@ -67,6 +73,7 @@ open struct
     match frm with
     | D.Ap v -> D.Ap (unfold v)
     | D.Splice -> D.Splice
+    | D.NatElim {zero ; suc} -> D.NatElim {zero = unfold zero ; suc = unfold suc}
 
   and unfold_inner iv =
     match iv with
@@ -82,6 +89,12 @@ open struct
       I.Lam (x, unfold_inner body)
     | I.Ap (fn, arg) -> 
       I.Ap (unfold_inner fn, unfold_inner arg)
+    | I.Zero ->
+      I.Zero
+    | I.Suc n ->
+      I.Suc (unfold_inner n)
+    | I.NatElim {scrut ; zero ; suc} ->
+      I.NatElim {scrut = unfold_inner scrut ; zero = unfold_inner zero ; suc = unfold_inner suc}
     | I.Quote tm ->
       I.Quote (unfold_inner tm)
     | I.Splice tm ->
@@ -90,6 +103,8 @@ open struct
       I.CodePi (unfold_inner base, unfold_inner fam)
     | I.CodeUniv stage ->
       I.CodeUniv stage
+    | I.CodeNat stage ->
+      I.CodeNat stage
 end
 
 

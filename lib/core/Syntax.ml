@@ -15,11 +15,16 @@ and t = D.syntax =
   | Lam of Ident.t * t
   | Ap of t * t
 
+  | Zero
+  | Suc of t
+  | NatElim of {zero : t ; suc : t ; scrut : t}
+
   | Quote of t
   | Splice of t
 
   | CodePi of t * t
   | CodeUniv of int
+  | CodeNat of int
 
 type tp = D.syntax_tp =
   | TpVar of int
@@ -27,6 +32,7 @@ type tp = D.syntax_tp =
   | Expr of tp
   | El of t
   | Univ of int
+  | Nat of int
 
 let app f a = Ap (f, a) 
 let apps f args = List.fold_left app f args
@@ -57,10 +63,14 @@ let classify_tm =
   | Global _ -> Prec.atom
   | Lam _ -> Prec.arrow
   | Ap _ -> Prec.juxtaposition
+  | Zero -> Prec.atom
+  | Suc _ -> Prec.juxtaposition
+  | NatElim _ -> Prec.juxtaposition
   | Quote _ -> Prec.quote
   | Splice _ -> Prec.splice
   | CodePi _ -> Prec.arrow
   | CodeUniv _ -> Prec.atom
+  | CodeNat _ -> Prec.atom
 
 let classify_tp =
   function
@@ -69,6 +79,7 @@ let classify_tp =
   | Expr _ -> Prec.delimited
   | El _ -> Prec.passed
   | Univ _ -> Prec.atom
+  | Nat _ -> Prec.atom
 
 let rec pp env =
   Pp.parens classify_tm env @@ fun fmt ->
@@ -87,6 +98,15 @@ let rec pp env =
     Format.fprintf fmt "%a %a"
       (pp (Pp.left_of Prec.juxtaposition env)) f
       (pp (Pp.right_of Prec.juxtaposition env)) arg
+  | Zero ->
+    Format.fprintf fmt "zero"
+  | Suc n ->
+    Format.fprintf fmt "suc %a" (pp (Pp.right_of Prec.juxtaposition env)) n
+  | NatElim {scrut ; zero ; suc} ->
+    Format.fprintf fmt "elim %a [ zero => %a | suc => %a ]" 
+      (pp env) scrut
+      (pp env) zero
+      (pp env) suc
   | Quote tm ->
     Format.fprintf fmt "↑[ %a ]"
       (pp (Pp.isolated env)) tm
@@ -99,6 +119,8 @@ let rec pp env =
       (pp (Pp.right_of Prec.juxtaposition env)) fam
   | CodeUniv stage ->
     Format.fprintf fmt "type %d" stage
+  | CodeNat stage ->
+    Format.fprintf fmt "nat %d" stage
 
 let rec pp_tp env =
   Pp.parens classify_tp env @@ fun fmt ->
@@ -119,6 +141,9 @@ let rec pp_tp env =
     pp env fmt tp
   | Univ stage ->
     Format.fprintf fmt "type %d"
+      stage
+  | Nat stage ->
+    Format.fprintf fmt "nat %d"
       stage
 
 let rec dump fmt : t -> unit =
@@ -141,6 +166,12 @@ let rec dump fmt : t -> unit =
     Format.fprintf fmt "ap[%a, %a]"
       dump f
       dump a
+  | Zero -> 
+    Format.fprintf fmt "zero"
+  | Suc n ->
+    Format.fprintf fmt "suc[%a]" dump n
+  | NatElim _ ->
+    Format.fprintf fmt "<nat-elim>"
   | Quote tm ->
     Format.fprintf fmt "quote[%a]"
       dump tm
@@ -153,6 +184,9 @@ let rec dump fmt : t -> unit =
       dump fam
   | CodeUniv stage ->
     Format.fprintf fmt "type[%d]"
+      stage
+  | CodeNat stage ->
+    Format.fprintf fmt "nat[%d]"
       stage
 
 and dump_tp fmt : tp -> unit =
@@ -173,4 +207,7 @@ and dump_tp fmt : tp -> unit =
       dump tm
   | Univ stage ->
     Format.fprintf fmt "univ[%d]"
+      stage
+  | Nat stage ->
+    Format.fprintf fmt "nat[%d]"
       stage

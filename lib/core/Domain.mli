@@ -12,6 +12,8 @@ type tp_clo = D.syntax_tp clo
 
 type t = D.value =
   | Lam of Ident.t * tm_clo
+  | Zero
+  | Suc of D.value
   | Quote of D.value
   | Neu of D.neu
   | Code of code
@@ -22,10 +24,12 @@ and tp = D.value_tp =
   | El of code
   | ElNeu of neu
   | Univ of int
+  | Nat of int
 
 and code = D.code = 
   | CodePi of t * t
   | CodeUniv of int
+  | CodeNat of int
 
 and neu = D.neu = { hd : hd; spine : frm list } 
 
@@ -39,6 +43,7 @@ and global =
 and frm = D.frm =
   | Ap of t
   | Splice
+  | NatElim of {zero : t ; suc : t}
 
 
 val local : int -> t

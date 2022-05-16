@@ -77,6 +77,12 @@ open struct
       O.Lam (x, clo body)
     | S.Ap (f, a) ->
       do_outer_ap (eval_outer f) (eval_outer a)
+    | S.Zero ->
+      O.Zero
+    | S.Suc n ->
+      O.Suc (eval_outer n)
+    | S.NatElim {scrut ; zero ; suc} ->
+      do_outer_nat_elim (eval_outer scrut) (eval_outer zero) (eval_outer suc)
     | S.Quote tm ->
       decr_stage @@
       begin
@@ -86,10 +92,11 @@ open struct
       end
     | S.Splice tm ->
       incr_stage @@ fun _ -> eval_outer tm
-    | S.CodePi _ ->
+    | S.CodePi _ 
+    | S.CodeUniv _ 
+    | S.CodeNat _ ->
       O.Irrelevant
-    | S.CodeUniv _ ->
-      O.Irrelevant
+
 
   and eval_inner (tm : S.t) =
     match tm with
@@ -101,6 +108,12 @@ open struct
       I.Lam (x, bind_inner @@ fun () -> eval_inner body)
     | S.Ap (fn, a) ->
       I.Ap (eval_inner fn, eval_inner a)
+    | S.Zero ->
+      I.Zero
+    | S.Suc n ->
+      I.Suc (eval_inner n)
+    | S.NatElim {scrut ; zero ; suc} ->
+      I.NatElim {scrut = eval_inner scrut ; zero = eval_inner zero ; suc = eval_inner suc}
     | S.Quote tm ->
       I.Quote (decr_stage @@ fun _ -> eval_inner tm)
     | S.Splice tm ->
@@ -113,12 +126,23 @@ open struct
     | S.CodePi (base, fam) ->
       I.CodePi (eval_inner base, eval_inner fam)
     | S.CodeUniv stage -> I.CodeUniv stage
+    | S.CodeNat stage ->
+      I.CodeNat stage
 
   and do_outer_ap fn a =
     match fn with
     | O.Lam (_, clo) -> inst_tm_clo clo a
     | _ -> 
       impossible "Expected a function in do_outer_ap"
+
+  and do_outer_nat_elim scrut zero suc =
+    match scrut with
+      | O.Zero -> 
+        zero
+      | O.Suc n ->
+        do_outer_ap (do_outer_ap suc n) (do_outer_nat_elim n zero suc)
+      | _ ->
+        impossible "Expected a nat in do_outer_ap"
 
   and do_splice (otm : O.t) =
     match otm with

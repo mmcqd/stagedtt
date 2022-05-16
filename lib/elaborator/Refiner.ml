@@ -1,4 +1,5 @@
 open Prelude
+open Core.TermBuilder
 
 module Ctx = OrderedHashTbl.Make(Ident)
 
@@ -155,6 +156,8 @@ open struct
       S.Expr tp, stage + 1
     | CS.Univ {stage} ->
       S.Univ stage, stage
+    | CS.Nat {stage} ->
+      S.Nat stage, stage
     | _ ->
       Error.staging_not_inferrable tm
 
@@ -175,6 +178,41 @@ open struct
         check fam ~stage (D.Univ stage)
       in
       S.CodePi (base, S.Lam (x, fam))
+    | CS.Zero, D.Nat stage ->
+      S.Zero
+    | CS.Suc n, D.Nat stage ->
+      let n = check n ~stage (D.Nat stage) in
+      S.Suc n
+    | CS.NatElim {zero ; suc = (n,ih,suc)}, D.Pi (D.Nat stage', ident, fam) ->
+      let mot =
+        bind_var ident stage' (D.Nat stage') @@ fun n ->
+        let fib = inst_tp_clo ~stage fam n in
+        let qfib = quote_tp fib in
+        match qfib with
+          | S.El code -> S.Lam (ident, code)
+          | _ -> Error.expected_connective "El" fib
+      in 
+      let vmot = eval ~stage mot in
+      let zero_tp = 
+        NbE.graft_tp @@
+        Graft.value vmot @@ fun mot ->
+        Graft.build @@
+        TB.el @@ TB.ap mot TB.zero
+      in
+      let suc_tp = 
+        NbE.graft_tp @@
+        Graft.value vmot @@ fun mot ->
+        Graft.build @@
+        TB.pi ~ident:n (TB.nat stage') @@ fun n ->
+        TB.pi ~ident:ih (TB.el @@ TB.ap mot n) @@ fun ih ->
+        TB.el @@ TB.ap mot (TB.suc n)
+      in
+      let zero = check zero ~stage zero_tp in
+      let suc = check suc ~stage suc_tp in 
+      bind_var ident stage' (D.Nat stage') @@ fun x ->
+      S.Lam (ident, S.NatElim {scrut = quote x ; zero ; suc})
+
+
     | CS.Quote tm, D.Expr tp ->
       if stage > 0 then
         S.Quote (check tm ~stage:(stage - 1) tp)

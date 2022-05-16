@@ -14,6 +14,8 @@ and tm_clo = D.syntax clo
 
 and t = D.outer =
   | Lam of Ident.t * tm_clo
+  | Zero
+  | Suc of t
   | Quote of D.inner
   | Irrelevant
 

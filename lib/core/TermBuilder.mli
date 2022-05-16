@@ -12,6 +12,12 @@ module TB : sig
   val lam : ?ident:Ident.t -> (S.t tb -> S.t tb) -> S.t tb
   val ap : S.t tb -> S.t tb -> S.t tb
 
+  (** {2 Nat} *)
+  val nat : int -> S.tp tb
+  val zero : S.t tb
+  val suc : S.t tb -> S.t tb
+  val nat_elim : scrut:(S.t tb) -> zero:(S.t tb) -> suc:(S.t tb) -> S.t tb
+
   (** {2 Universes} *)
   val el : S.t tb -> S.tp tb
 end

@@ -14,6 +14,10 @@ let rec quote : D.t -> S.t =
     quote_neu neu
   | D.Lam (x, clo) ->
     S.Lam (x, quote_tm_clo clo)
+  | D.Zero ->
+    S.Zero
+  | D.Suc n ->
+    S.Suc (quote n)
   | D.Quote v ->
     S.Quote (quote v)
   | D.Code code ->
@@ -37,6 +41,8 @@ and quote_tp : D.tp -> S.tp =
     S.El (quote_code code)
   | D.ElNeu neu ->
     S.El (quote_neu neu)
+  | D.Nat stage ->
+    S.Nat stage
 
 (*******************************************************************************
  * Quoting Codes *)
@@ -47,6 +53,8 @@ and quote_code : D.code -> S.t =
     S.CodePi (quote base, quote fam)
   | D.CodeUniv stage ->
     S.CodeUniv stage
+  | D.CodeNat stage ->
+    S.CodeNat stage
 
 (*******************************************************************************
  * Quoting Neutrals *)
@@ -72,6 +80,8 @@ and quote_frm (tm : S.t) : D.frm -> S.t =
     S.Ap (tm, arg)
   | D.Splice ->
     S.Splice tm
+  | D.NatElim {zero ; suc} ->
+    S.NatElim {scrut = tm ; zero = quote zero ; suc = quote suc}
 
 
 (*******************************************************************************

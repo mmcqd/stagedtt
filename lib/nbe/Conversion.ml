@@ -52,6 +52,10 @@ open struct
       equate_neu neu0 neu1
     | D.Lam (_, clo0), D.Lam (_, clo1) ->
       equate_tm_clo clo0 clo1
+    | D.Zero, D.Zero -> 
+      ()
+    | D.Suc n0, D.Suc n1 ->
+      equate n0 n1
     | D.Quote v0, D.Quote v1 ->
       equate v0 v1
     | D.Code code0, D.Code code1 ->
@@ -88,6 +92,8 @@ open struct
       equate_code code0 code1
     | D.ElNeu neu0, D.ElNeu neu1 ->
       equate_neu neu0 neu1
+    | D.Nat stage0, D.Nat stage1 when stage0 = stage1 ->
+      ()
     | tp0, tp1 -> equate_eta_tp tp0 tp1
 
   (*******************************************************************************
@@ -99,6 +105,8 @@ open struct
       equate base0 base1;
       equate fam0 fam1
     | CodeUniv stage0, CodeUniv stage1 when stage0 = stage1 -> 
+      ()
+    | CodeNat stage0, CodeNat stage1 when stage0 = stage1 -> 
       ()
     | _ -> raise NotConvertible
 
@@ -148,6 +156,9 @@ open struct
       equate v0 v1
     | D.Splice, D.Splice ->
       ()
+    | D.NatElim e0, D.NatElim e1 ->
+      equate e0.zero e1.zero;
+      equate e0.suc e1.suc
     | _ -> raise NotConvertible
 
   (** {1 Equating with Eta Expansion} *)

@@ -42,6 +42,12 @@ open struct
       D.Lam (x, clo body)
     | S.Ap (f, a) ->
       do_ap (eval f) (eval a) (eval_inner a)
+    | S.Zero ->
+      D.Zero
+    | S.Suc n ->
+      D.Suc (eval n)
+    | S.NatElim {scrut ; zero ; suc} ->
+      do_nat_elim (eval scrut) (eval zero) (eval suc) (eval_inner zero) (eval_inner suc)
     | S.Quote t ->
       D.Quote (eval t)
     | S.Splice (t) ->
@@ -50,6 +56,8 @@ open struct
       D.Code (D.CodePi (eval base, eval fam))
     | S.CodeUniv stage ->
       D.Code (D.CodeUniv stage)
+    | S.CodeNat stage ->
+      D.Code (D.CodeNat stage)
 
   and eval_fields fields =
     List.map (fun (lbl, t) -> (lbl, eval t)) fields
@@ -68,6 +76,8 @@ open struct
       do_el (eval code)
     | S.Univ stage ->
       D.Univ stage
+    | S.Nat stage ->
+      D.Nat stage
 
   (** {1 Eliminators} *)
 
@@ -81,6 +91,25 @@ open struct
       D.Neu (D.push_frm neu (D.Ap arg) ~unfold ~stage)
     | _ ->
       raise @@ NbeFailed "Not a function in do_ap"
+
+  and do_nat_elim (v : D.t) (zero : D.t) (suc : D.t) (izero : I.t) (isuc : I.t) =
+    match v with
+      | D.Zero -> 
+        zero
+      | D.Suc n ->
+        let recr = do_nat_elim n zero suc izero isuc in 
+        graft_value @@
+        Graft.value n @@ fun n ->
+        Graft.value suc @@ fun suc ->
+        Graft.value recr @@ fun recr ->
+        Graft.build @@
+        TB.ap (TB.ap suc n) recr
+      | D.Neu neu ->
+        let unfold n = do_nat_elim n zero suc izero isuc in
+        let stage scrut = I.NatElim {scrut ; zero = izero ; suc = isuc} in
+        D.Neu (D.push_frm neu (D.NatElim {zero ; suc}) ~unfold ~stage)
+      | _ ->
+        raise @@ NbeFailed "Not a nat in do_nat_elim"
 
   and do_splice (v : D.t) =
     match v with
@@ -111,6 +140,7 @@ open struct
       Graft.build @@
       TB.pi (TB.el base) @@ fun x -> TB.el (TB.ap fam x)
     | D.CodeUniv stage -> D.Univ stage
+    | D.CodeNat stage -> D.Nat stage
 
   (** {1 Closure Instantiation} *)
 

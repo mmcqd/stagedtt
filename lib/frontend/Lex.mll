@@ -31,7 +31,11 @@ let keywords =
   make_table 0 [
     ("def", DEF);
     ("type", TYPE);
-    ("the", THE)
+    ("the", THE);
+    ("nat", NAT);
+    ("zero", ZERO);
+    ("suc", SUC);
+    ("elim", ELIM)
   ]
 
 (* Some Lexing Utilities *)
@@ -93,6 +97,10 @@ and real_token = parse
     { LAMBDA }
   | "->" | "→"
     { RIGHT_ARROW }
+  | "=>" | "⇒"
+    { RRIGHT_ARROW }
+  | "|"
+    { PIPE }
   | ':'
      { COLON }
   | "::"

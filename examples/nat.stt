@@ -1,0 +1,9 @@
+
+
+def one : nat 0 := zero
+def two : nat 0 := suc one
+
+#print two
+
+def id : nat 0 -> nat 0 :=
+    elim [ zero => zero | suc n ih => suc ih ]

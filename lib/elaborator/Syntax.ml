@@ -7,6 +7,10 @@ type t =
   | Pi of t * Ident.t * t
   | Lam of Ident.t list * t
   | Ap of t * t list
+  | Nat of { stage : int }
+  | Zero
+  | Suc of t
+  | NatElim of { zero : t ; suc : Ident.t * Ident.t * t }
   | Expr of t
   | Quote of t
   | Splice of t
@@ -34,6 +38,16 @@ let rec dump fmt =
     Format.fprintf fmt "ap[%a, %a]"
       dump t
       (Format.pp_print_list dump) tms
+  | Nat {stage} ->
+    Format.fprintf fmt "nat[%d]"
+      stage
+  | Zero ->
+    Format.fprintf fmt "zero"
+  | Suc n ->
+    Format.fprintf fmt "suc[%a]"
+      dump n
+  | NatElim _ -> 
+    Format.fprintf fmt "<nat-elim>"
   | Expr tm ->
     Format.fprintf fmt "expr[%a]"
       dump tm

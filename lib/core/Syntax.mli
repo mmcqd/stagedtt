@@ -13,11 +13,16 @@ and t = D.syntax =
   | Lam of Ident.t * t
   | Ap of t * t
 
+  | Zero
+  | Suc of t
+  | NatElim of {zero : t ; suc : t ; scrut : t}
+
   | Quote of t
   | Splice of t
 
   | CodePi of t * t
   | CodeUniv of int
+  | CodeNat of int
 
 type tp = D.syntax_tp =
   | TpVar of int
@@ -27,6 +32,7 @@ type tp = D.syntax_tp =
   | Expr of tp
   | El of t
   | Univ of int
+  | Nat of int
 
 (* include module type of Syntax *)
 

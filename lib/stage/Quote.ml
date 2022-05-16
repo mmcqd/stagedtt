@@ -15,6 +15,12 @@ let rec quote_inner tm =
     S.Lam (x, Quoting.bind_var @@ fun _ -> quote_inner body)
   | I.Ap (fn, arg) ->
     S.Ap (quote_inner fn, quote_inner arg)
+  | I.Zero ->
+    S.Zero
+  | I.Suc n ->
+    S.Suc (quote_inner n)
+  | I.NatElim {scrut ; suc ; zero} ->
+    S.NatElim {scrut = quote_inner scrut ; suc = quote_inner suc ; zero = quote_inner zero}
   | I.Quote (tm) ->
     S.Quote (quote_inner tm)
   | I.Splice tm ->
@@ -23,3 +29,5 @@ let rec quote_inner tm =
     S.CodePi (quote_inner base, quote_inner fam)
   | I.CodeUniv stage ->
     S.CodeUniv stage
+  | I.CodeNat stage ->
+    S.CodeNat stage

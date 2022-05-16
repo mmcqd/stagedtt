@@ -43,6 +43,24 @@ struct
     fun env ->
     S.Ap (fn env, arg env)
 
+  (** {2 Nat} *)
+
+  let nat i = 
+    fun env ->
+    S.Nat i
+  
+  let zero = 
+    fun env ->
+    S.Zero
+  
+  let suc n =
+    fun env ->
+    S.Suc (n env)
+  
+  let nat_elim ~scrut ~zero ~suc =
+    fun env ->
+    S.NatElim {scrut = scrut env ; zero = zero env ; suc = suc env}
+
   (** {2 Universes} *)
   let el t =
     fun env ->

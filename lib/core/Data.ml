@@ -17,11 +17,16 @@ and syntax =
   | Lam of Ident.t * syntax
   | Ap of syntax * syntax
 
+  | Zero
+  | Suc of syntax
+  | NatElim of {zero : syntax ; suc : syntax ; scrut : syntax}
+
   | Quote of syntax
   | Splice of syntax
 
   | CodePi of syntax * syntax
   | CodeUniv of int
+  | CodeNat of int
 
 and syntax_tp =
   | TpVar of int
@@ -31,11 +36,14 @@ and syntax_tp =
   | Expr of syntax_tp
   | El of syntax
   | Univ of int
+  | Nat of int
 
 (** {1 Values} *)
 
 and value =
   | Lam of Ident.t * tm_vclo
+  | Zero
+  | Suc of value
   | Quote of value
   | Neu of neu
   | Code of code
@@ -43,6 +51,7 @@ and value =
 and code =
   | CodePi of value * value
   | CodeUniv of int
+  | CodeNat of int
 
 and value_tp =
   | Pi of value_tp * Ident.t * tp_vclo
@@ -50,6 +59,7 @@ and value_tp =
   | El of code
   | ElNeu of neu
   | Univ of int
+  | Nat of int
 
 and neu = { hd : hd; spine : frm list }
 
@@ -61,6 +71,7 @@ and hd =
 and frm =
   | Ap of value
   | Splice
+  | NatElim of {zero : value ; suc : value}
 
 and 'a vclo =
   | Clo of 'a * value_env
@@ -78,6 +89,8 @@ and value_env =
 
 and outer =
   | Lam of Ident.t * tm_sclo
+  | Zero
+  | Suc of outer
   | Quote of inner
   | Irrelevant
 
@@ -88,11 +101,16 @@ and inner =
   | Lam of Ident.t * inner
   | Ap of inner * inner
 
+  | Zero
+  | Suc of inner
+  | NatElim of {scrut : inner ; zero : inner ; suc : inner}
+
   | Quote of inner
   | Splice of inner
 
   | CodePi of inner * inner
   | CodeUniv of int
+  | CodeNat of int
 
 and staged =
   | Inner of inner
