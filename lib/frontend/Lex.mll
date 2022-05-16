@@ -35,7 +35,8 @@ let keywords =
     ("nat", NAT);
     ("zero", ZERO);
     ("suc", SUC);
-    ("elim", ELIM)
+    ("elim", ELIM);
+    ("at", AT)
   ]
 
 (* Some Lexing Utilities *)
@@ -97,8 +98,6 @@ and real_token = parse
     { LAMBDA }
   | "->" | "→"
     { RIGHT_ARROW }
-  | "=>" | "⇒"
-    { RRIGHT_ARROW }
   | "|"
     { PIPE }
   | ':'

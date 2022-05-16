@@ -126,6 +126,11 @@ open struct
       raise @@ Diagnostic.Fatal diag
   end
 
+    
+  let assert_nat stage tp =
+    try NbE.equate_tp ~size:0 tp (D.Nat stage) with
+      | NbE.NotConvertible -> Error.expected_connective "nat" tp
+
   (** {1 Elaborating Types} *)
 
   let rec check_tp (tm : CS.t) ~(stage : int) : S.tp =
@@ -183,36 +188,6 @@ open struct
     | CS.Suc n, D.Nat stage ->
       let n = check n ~stage (D.Nat stage) in
       S.Suc n
-    | CS.NatElim {zero ; suc = (n,ih,suc)}, D.Pi (D.Nat stage', ident, fam) ->
-      let mot =
-        bind_var ident stage' (D.Nat stage') @@ fun n ->
-        let fib = inst_tp_clo ~stage fam n in
-        let qfib = quote_tp fib in
-        match qfib with
-          | S.El code -> S.Lam (ident, code)
-          | _ -> Error.expected_connective "El" fib
-      in 
-      let vmot = eval ~stage mot in
-      let zero_tp = 
-        NbE.graft_tp @@
-        Graft.value vmot @@ fun mot ->
-        Graft.build @@
-        TB.el @@ TB.ap mot TB.zero
-      in
-      let suc_tp = 
-        NbE.graft_tp @@
-        Graft.value vmot @@ fun mot ->
-        Graft.build @@
-        TB.pi ~ident:n (TB.nat stage') @@ fun n ->
-        TB.pi ~ident:ih (TB.el @@ TB.ap mot n) @@ fun ih ->
-        TB.el @@ TB.ap mot (TB.suc n)
-      in
-      let zero = check zero ~stage zero_tp in
-      let suc = check suc ~stage suc_tp in 
-      bind_var ident stage' (D.Nat stage') @@ fun x ->
-      S.Lam (ident, S.NatElim {scrut = quote x ; zero ; suc})
-
-
     | CS.Quote tm, D.Expr tp ->
       if stage > 0 then
         S.Quote (check tm ~stage:(stage - 1) tp)
@@ -253,6 +228,42 @@ open struct
       let f_tm, f_stage, f_tp = infer t in
       let tms, tp = check_args f_stage f_tp ts in
       S.apps f_tm tms, f_stage, tp
+    | CS.NatElim {mot = (x,mot); scrut ; zero ; suc = (n,ih,suc)} ->
+      let scrut, stage, scrut_tp = infer scrut in
+      assert_nat stage scrut_tp;
+      let vscrut = eval ~stage scrut in
+      let mot_tp = 
+        NbE.graft_tp @@
+        Graft.build @@
+        (* [TODO: Matthew M, 16/05/2022] Does the return type have to be in `stage`? *)
+        TB.pi (TB.nat stage) @@ fun _ -> TB.univ stage
+      in
+      let mot = check (CS.Lam ([x],mot)) ~stage mot_tp in
+      let vmot = eval ~stage mot in
+      let zero_tp = 
+        NbE.graft_tp @@
+        Graft.value vmot @@ fun mot ->
+        Graft.build @@
+        TB.el @@ TB.ap mot TB.zero
+      in
+      let suc_tp = 
+        NbE.graft_tp @@
+        Graft.value vmot @@ fun mot ->
+        Graft.build @@
+        TB.pi ~ident:n (TB.nat stage) @@ fun n ->
+        TB.pi ~ident:ih (TB.el @@ TB.ap mot n) @@ fun ih ->
+        TB.el @@ TB.ap mot (TB.suc n)
+      in
+      let ret_tp = 
+        NbE.graft_tp @@
+        Graft.value vmot @@ fun mot ->
+        Graft.value vscrut @@ fun scrut ->
+        Graft.build @@
+        TB.el @@ TB.ap mot scrut
+      in
+      let zero = check zero ~stage zero_tp in
+      let suc = check (CS.Lam ([n;ih],suc)) ~stage suc_tp in 
+      S.NatElim {scrut ; zero ; suc}, stage, ret_tp
     | CS.Splice tm ->
       let tm, stage, tp = infer tm in
       begin
@@ -265,6 +276,8 @@ open struct
     (* [TODO: Reed M, 03/05/2022] is this right? *)
     | CS.Univ {stage} ->
       S.CodeUniv stage, stage, D.Univ stage
+    | CS.Nat {stage} ->
+      S.CodeNat stage, stage, D.Univ stage
     | CS.Ann {tm; tp} ->
       let (tp, stage) = infer_tp tp in
       let vtp = eval_tp ~stage tp in

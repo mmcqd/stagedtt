@@ -65,6 +65,10 @@ struct
   let el t =
     fun env ->
     S.El (t env)
+  
+  let univ i =
+    fun env ->
+    S.Univ i
 end
 
 (** {1 Grafting} *)

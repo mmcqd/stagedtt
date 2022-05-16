@@ -10,7 +10,7 @@ type t =
   | Nat of { stage : int }
   | Zero
   | Suc of t
-  | NatElim of { zero : t ; suc : Ident.t * Ident.t * t }
+  | NatElim of { zero : t ; suc : Ident.t * Ident.t * t ; mot : Ident.t * t ; scrut : t}
   | Expr of t
   | Quote of t
   | Splice of t

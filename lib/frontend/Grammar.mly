@@ -14,14 +14,14 @@ let ap_or_atomic =
 %token <int> NUMERAL
 %token <string> ATOM
 %token <bool> FLAG
-%token COLON COLON_COLON COLON_EQUALS RIGHT_ARROW RRIGHT_ARROW UNDERSCORE
+%token COLON COLON_COLON COLON_EQUALS RIGHT_ARROW UNDERSCORE
 (* Symbols *)
 %token LAMBDA
 (* Delimiters *)
 %token LPR RPR LSQ RSQ UP_LSQ DOWN_LSQ DOUBLE_UP_LSQ PIPE
 (* Keywords *)
 %token TYPE THE
-%token NAT ZERO SUC ELIM
+%token NAT ZERO SUC ELIM AT
 (* Commands *)
 %token DEF NORMALIZE STAGE PRINT FAIL DEBUG QUIT
 %token EOF
@@ -77,8 +77,8 @@ term:
     { ap_or_atomic tms }
   | tm = arrow
     { tm }
-  | ELIM; LSQ; ZERO; RRIGHT_ARROW; zero = term; PIPE; SUC; n = name; ih = name; RRIGHT_ARROW; suc = term; RSQ
-    { NatElim {zero ; suc = (n,ih,suc)} }
+  | ELIM; scrut = term; AT; x = name; RIGHT_ARROW; mot = term; LSQ; ZERO; RIGHT_ARROW; zero = term; PIPE; SUC; n = name; ih = name; RIGHT_ARROW; suc = term; RSQ
+    { NatElim {zero ; suc = (n,ih,suc) ; scrut ; mot = (x,mot)} }
 
 arrow:
   | LAMBDA; nms = list(name); RIGHT_ARROW; tm = term

@@ -20,6 +20,7 @@ module TB : sig
 
   (** {2 Universes} *)
   val el : S.t tb -> S.tp tb
+  val univ : int -> S.tp tb
 end
 
 (** {1 Grafting} *)
